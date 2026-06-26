@@ -62,7 +62,7 @@ PACS() {
 
 clear
 echo -e "
-choose from s/q/l/r/h/a/u
+choose from s/q/l/r/h/a/u/ use SPACE to refresh
     s) 📥 or 🔍 package/s
     q) 🔍 installed package/s
     l) 🧾 FILES in installed package
@@ -73,13 +73,13 @@ choose from s/q/l/r/h/a/u
 read -r -n 1 PACK
 
 case $PACK in
-    s) PACS; clear; exec $0 ;;
+    s) PACS; clear; exec "$0" ;;
 ## Clean Title | Clean Action | Marker Emoji | Color | FZF Preview Mode | Execution Command
-    q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi; exec $0 ;;
-    l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Ql {1}" pacman -Qlkk; exec $0 ;;
-    r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" doas pacman -Rns; clear; exec $0 ;;
-    h) expac --timefmt='%Y-%m-%d %T' '%l\t%n' | sort -r | less; clear; exec $0 ;;
-    a) pacman -Qm | less; clear; exec $0 ;;
-    u) doas pacman --color=always -Sy archlinux-keyring --needed; doas pacman --color=always -Su; clear; exec $0 ;;
-	*) clear; exec $0 ;;
+    q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi; exec "$0" ;;
+    l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Ql {1}" pacman -Qlkk; exec "$0" ;;
+    r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" doas pacman -Rns; clear; exec "$0" ;;
+    # h) expac --timefmt='%Y-%m-%d %T' '%l\t%n' | sort -r | less; clear; exec "$0" ;;
+	h) grep -E 'reloaded|installed|removed|upgraded' /var/log/pacman.log | sort -r | sed -e 's/removed/\x1b[31mremoved\x1b[0m/g' -e 's/installed/\x1b[32minstalled\x1b[0m/g' -e 's/upgraded/\x1b[33mupgraded\x1b[0m/g' | less -R; clear; exec "$0" ;;
+	a) pacman -Qm | less; clear; exec "$0" ;;
+    u) doas pacman --color=always -Sy archlinux-keyring --needed; doas pacman --color=always -Su; clear; exec "$0" ;;
 esac
