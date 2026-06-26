@@ -71,13 +71,15 @@ choose from s/q/l/r/h/a/u
     u) 🔁"
 read -r -n 1 PACK
 
+
 case $PACK in
-    s) PACS ;;
+    s) PACS; clear; $0 ;;
 ## Clean Title | Clean Action | Marker Emoji | Color | FZF Preview Mode | Execution Command
-    q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi ;;
-    l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Ql {1}" pacman -Qlkk ;;
-    r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" doas pacman -Rns ;;
-    h) expac --timefmt='%Y-%m-%d %T' '%l\t%n' | sort -r | less ;;
-    a) pacman -Qm ;;
-    u) doas pacman --color=always -Sy archlinux-keyring --needed; doas pacman --color=always -Su ;;
+    q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi; $0 ;;
+    l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Ql {1}" pacman -Qlkk; $0 ;;
+    r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" doas pacman -Rns; clear; $0 ;;
+    h) expac --timefmt='%Y-%m-%d %T' '%l\t%n' | sort -r | less; clear; $0 ;;
+    a) pacman -Qm | less; clear; $0 ;;
+    u) doas pacman --color=always -Sy archlinux-keyring --needed; doas pacman --color=always -Su; clear; $0 ;;
+	*) clear; $0 ;;
 esac
