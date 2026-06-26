@@ -59,8 +59,8 @@ PACS() {
 
   pacman -Ssq | fzf --preview='pacman -Si {1}' --marker='🔜' | xargs -ro doas pacman -Syu
 }
-
-clear
+## clear causes output of q/l cleared
+# clear
 echo -e "
 choose from s/q/l/r/h/a/u/ use SPACE to refresh
     s) 📥 or 🔍 package/s
