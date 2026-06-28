@@ -1,6 +1,5 @@
 #!/bin/sh
 
-## FZF config
 export FZF_DEFAULT_OPTS="
   --multi
   --reverse
@@ -19,7 +18,6 @@ export FZF_DEFAULT_OPTS="
   --bind 'ctrl-a:select-all'
 "
 
-## $1=Title, $2=Action, $3=Marker, $4=Color, $5=PreviewCmd, $6+=ExecCmd
 PAC_MANAGE() {
   title="$1"   action="$2"  marker="$3"
   color="$4"   preview="$5"
@@ -35,15 +33,9 @@ PAC_MANAGE() {
 
   printf '\n'
   printf '\e[1;%sm╭──────────────────────────────────────────────────────────────╮\e[0m\n' "$color"
-
- printf "\e[1;%sm│\e[1;37m 󰣇 %b\e[1;%sm%s│\e[0m\n" "$color" "$display_title" "$color" "$(printf "%$((59 - ${#title}))s")"
-
+  printf "\e[1;%sm│\e[1;37m 󰣇 %b\e[1;%sm%s│\e[0m\n" "$color" "$display_title" "$color" "$(printf "%$((59 - ${#title}))s")"
   printf '\e[1;%sm├──────────────────────────────────────────────────────────────┤\e[0m\n' "$color"
-
-# FIXED: Switched back to frame color for spaces, then dropped back to standard text color (\e[0m) before "? Preview"
   printf "\e[1;%sm│\e[0m ⇥ Select  ⏎ %b\e[1;%sm%s\e[0m? Preview  ⇧↑/↓ Scroll  ^A All       \e[1;%sm│\e[0m\n" "$color" "$display_action" "$color" "$(printf "%-$((12 - ${#action}))s")" "$color"
-  # printf "\e[1;%sm│\e[0m ⇥ Select  ⏎ %b\e[1;%sm%s? Preview  ⇧↑/↓ Scroll  ^A All       \e[1;%sm│\e[0m\n" "$color" "$display_action" "$color" "$(printf "%-$((12 - ${#action}))s")" "$color"
-
   printf '\e[1;%sm╰──────────────────────────────────────────────────────────────╯\e[0m\n\n' "$color"
 
   pacman -Qq | fzf --preview="$preview" --marker="$marker" | xargs -ro "$@"
@@ -56,13 +48,20 @@ PACS() {
   printf '\e[1;36m├──────────────────────────────────────────────────────────────┤\e[0m\n'
   printf '\e[1;36m│\e[0m ⇥ Select  ⏎ INSTALL  ? Preview  ⇧↑/↓ Scroll  ^A All          \e[1;36m│\e[0m\n'
   printf '\e[1;36m╰──────────────────────────────────────────────────────────────╯\e[0m\n\n'
+  printf 'run 🔁 to avoid partial upgrade'
 
-  pacman -Ssq | fzf --preview='pacman -Si {1}' --marker='🔜' | xargs -ro doas pacman -Syu
+## Changed -Syu to -S to prevent forced full-upgrades on simple installs
+  pacman -Ssq | fzf --preview='pacman -Si {1}' --marker='🔜' | xargs -ro doas pacman -S
 }
-## clear causes output of q/l cleared
-# clear
-echo -e "
-choose from s/q/l/r/h/a/u/ use SPACE to refresh
+
+ARG_CHOICE=$(echo "$1" | sed 's/^-//')
+while true; do
+  if [ -n "$ARG_CHOICE" ]; then
+    PACK="$ARG_CHOICE"
+    ARG_CHOICE="" # Clear it so the loop prompts normally next time
+  else
+    echo -e "
+choose from s/q/l/r/h/a/u/ SPACE=refresh Ctrl-C=exit
     s) 📥 or 🔍 package/s
     q) 🔍 installed package/s
     l) 🧾 FILES in installed package
@@ -70,16 +69,26 @@ choose from s/q/l/r/h/a/u/ use SPACE to refresh
     h) 📚 History
     a) 🧾 of FOREIGN/AUR packages
     u) 🔁"
-read -r -n 1 PACK
+    read -r -n 1 PACK
+  fi
 
-case $PACK in
-    s) PACS; clear; exec "$0" ;;
-## Clean Title | Clean Action | Marker Emoji | Color | FZF Preview Mode | Execution Command
-    q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi; exec "$0" ;;
-    l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Ql {1}" pacman -Qlkk; exec "$0" ;;
-    r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" doas pacman -Rns; clear; exec "$0" ;;
-    # h) expac --timefmt='%Y-%m-%d %T' '%l\t%n' | sort -r | less; clear; exec "$0" ;;
-	h) grep -E 'reloaded|installed|removed|upgraded' /var/log/pacman.log | sort -r | sed -e 's/removed/\x1b[31mremoved\x1b[0m/g' -e 's/installed/\x1b[32minstalled\x1b[0m/g' -e 's/upgraded/\x1b[33mupgraded\x1b[0m/g' | less -R; clear; exec "$0" ;;
-	a) pacman -Qm | less; clear; exec "$0" ;;
-    u) doas pacman --color=always -Sy archlinux-keyring --needed; doas pacman --color=always -Su; clear; exec "$0" ;;
-esac
+  case $PACK in
+    s) PACS; clear ;;
+    q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi; clear ;;
+    l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Ql {1}" pacman -Qlkk; clear ;;
+    r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" doas pacman -Rns; clear ;;
+    h) grep -E 'reloaded|installed|removed|upgraded' /var/log/pacman.log | sort -r | sed -e 's/removed/\x1b[31mremoved\x1b[0m/g' -e 's/installed/\x1b[32minstalled\x1b[0m/g' -e 's/upgraded/\x1b[33mupgraded\x1b[0m/g' | less -R; clear ;;
+    a) pacman -Qm | less; clear ;;
+    u)
+       doas pacman --color=always -Sy archlinux-keyring --needed
+       doas pacman --color=always -Su
+	   ## for waybar module
+       # doas checkupdates | wc -l > /tmp/pacup
+       # sleep 1
+       # pkill -SIGRTMIN+8 waybar
+       clear
+       ;;
+    " ") clear ;;
+    *) clear ;;
+  esac
+done
