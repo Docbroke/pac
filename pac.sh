@@ -156,19 +156,19 @@ while true; do
 Last Database Sync(-Sy): $AGE_STR
 \e[1;33mchoose from s/q/l/L/r/h/a/A/o/u/y/f/c\e[0m SPACE=refresh \e[1;31mCtrl-C=exit\e[0m
 
-    \e[1;32ms) 📥 or 🔍 package/s\e[0m
-    q) 🔍 installed package/s INFO
-    l) 🧾 FILES in installed package
-    L) 🧾 FILES in all packages (Uses -F database)
-    \e[1;31mr) 🔥 package/s\e[0m
-    h) 📚 History
-    a) 🧾 of FOREIGN/AUR packages
-    A) 🔍 or 🔥 FOREIGN/AUR packages
-    o) 🔍 find OWNER of a file
-    \e[1;32mu) 🔁 Update & Upgrade\e[0m
-    y) 🔁 Update Only
-    f) 🔁 Update Database (-F)
-    c) 🧹cleanup🧹
+    \e[1;33ms)\e[0m \e[1;32m📥 or 🔍 package/s\e[0m
+    \e[1;33mq)\e[0m 🔍 installed package/s INFO
+    \e[1;33ml)\e[0m 🧾 FILES in installed package
+    \e[1;33mL)\e[0m 🧾 FILES in all packages (Uses -F database)
+    \e[1;33mr)\e[0m \e[1;31m🔥 package/s\e[0m
+    \e[1;33mh)\e[0m 📚 History
+    \e[1;33ma)\e[0m 🧾 of FOREIGN/AUR packages
+    \e[1;33mA)\e[0m 🔍 or 🔥 FOREIGN/AUR packages
+    \e[1;33mo)\e[0m 🔍 find OWNER of a file
+    \e[1;33mu)\e[0m \e[1;32m🔁 Update & Upgrade\e[0m
+    \e[1;33my)\e[0m 🔁 Update Only
+    \e[1;33mf)\e[0m 🔁 Update Database (-F)
+    \e[1;33mc)\e[0m 🧹cleanup🧹
     "
     read -r -n 1 PACK
   fi
