@@ -38,70 +38,71 @@ PAC_MANAGE() {
   printf "\e[1;%sm│\e[0m ⇥ Select  ⏎ %b\e[1;%sm%s\e[0m? Preview  ⇧↑/↓ Scroll  ^A All       \e[1;%sm│\e[0m\n" "$color" "$display_action" "$color" "$(printf "%-$((12 - ${#action}))s")" "$color"
   printf '\e[1;%sm╰──────────────────────────────────────────────────────────────╯\e[0m\n\n' "$color"
 
-  pacman -Qq | fzf --preview="$preview" --marker="$marker" | xargs -ro "$@"
-}
+  if [ ! -t 0 ]; then
+    SELECTION=$(fzf --preview="$preview" --marker="$marker")
+  else
+    SELECTION=$(pacman -Qq | fzf --preview="$preview" --marker="$marker")
+  fi
 
-PACS() {
-  printf '\n'
-  printf '\e[1;36m╭──────────────────────────────────────────────────────────────╮\e[0m\n'
-  printf '\e[1;36m│\e[1;37m 󰣇 Pacman Package Installer                                   \e[1;36m│\e[0m\n'
-  printf '\e[1;36m├──────────────────────────────────────────────────────────────┤\e[0m\n'
-  printf '\e[1;36m│\e[0m ⇥ Select  ⏎ INSTALL  ? Preview  ⇧↑/↓ Scroll  ^A All          \e[1;36m│\e[0m\n'
-  printf '\e[1;36m╰──────────────────────────────────────────────────────────────╯\e[0m\n\n'
-  printf 'run 🔁 to avoid partial upgrade'
+  if [ -n "$SELECTION" ] && [ "$SELECTION" != "" ]; then
+    ARGS=$(echo "$SELECTION" | tr '\n' ' ')
 
-## Changed -Syu to -S to prevent forced full-upgrades on simple installs
-  pacman -Ssq | fzf --preview='pacman -Si {1}' --marker='🔜' | xargs -ro doas pacman -S
+    case "$*" in
+      *"/{}"*)
+        echo "$SELECTION" | while read -r item; do
+          if [ -n "$item" ]; then
+            cmd_string=$(echo "$*" | sed "s|/{}|/$item|g")
+            eval "$cmd_string" < /dev/tty
+          fi
+        done
+        ;;
+      *)
+        $@ $ARGS < /dev/tty
+        ;;
+    esac
+
+    printf "\n\e[1;32mPress any key to return to menu...\e[0m"
+    read -r -n 1 < /dev/tty
+  fi
 }
 
 ARG_CHOICE=$(echo "$1" | sed 's/^-//')
 while true; do
+  clear
   if [ -n "$ARG_CHOICE" ]; then
     PACK="$ARG_CHOICE"
-    ARG_CHOICE="" # Clear it so the loop prompts normally next time
+    ARG_CHOICE=""
   else
     echo -e "
-choose from s/q/l/o/r/h/a/u/ SPACE=refresh Ctrl-C=exit
+choose from s/q/l/r/h/a/o/u/ SPACE=refresh Ctrl-C=exit
     s) 📥 or 🔍 package/s
     q) 🔍 installed package/s
     l) 🧾 FILES in installed package
-    o) 🔍 find OWNER of a file
     r) 🔥 package/s
     h) 📚 History
     a) 🧾 of FOREIGN/AUR packages
+    o) 🔍 find OWNER of a file
     u) 🔁"
     read -r -n 1 PACK
   fi
 
   case $PACK in
-    s) PACS; clear ;;
-    q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi; clear ;;
-    l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Ql {1}" pacman -Qlkk; clear ;;
-    r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" doas pacman -Rns; clear ;;
-    h) grep -E 'reloaded|installed|removed|upgraded' /var/log/pacman.log | sort -r | sed -e 's/removed/\x1b[31mremoved\x1b[0m/g' -e 's/installed/\x1b[32minstalled\x1b[0m/g' -e 's/upgraded/\x1b[33mupgraded\x1b[0m/g' | less -R; clear ;;
-    a) pacman -Qm | less; clear ;;
-	o)
-       pacman -Qlq | grep -v '/$' | \
-       fzf --prompt="Find Owner > " \
-           --preview="pacman -Qo /{} 2>&1" \
-           --border-label=" Find File Owner " \
-           --preview-window="right:60%:border-rounded" | \
-       xargs -I {} -ro pacman -Qo /{}
-
-       printf "\n\e[1;30mPress any key to return to menu...\e[0m"
-       read -r -n 1
-       clear
-       ;;
+    s) printf "\e[1;33mTip: Remember to run a system upgrade ('u') if your databases are out of date!\e[0m\n"
+       pacman -Ssq | PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Si {1}" doas pacman -S ;;
+    q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi ;;
+    l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Ql {1}" pacman -Qlkk ;;
+    r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" doas pacman -Rns ;;
+    o) pacman -Qlq | grep -v '/$' | PAC_MANAGE "Find File Owner" "OWNER" "🔍" "35" "pacman -Qo /{} 2>&1" pacman -Qo /{} ;;
+    h) grep -E 'reloaded|installed|removed|upgraded' /var/log/pacman.log | sort -r | sed -e 's/removed/\x1b[31mremoved\x1b[0m/g' -e 's/installed/\x1b[32minstalled\x1b[0m/g' -e 's/upgraded/\x1b[33mupgraded\x1b[0m/g' | less -R ;;
+    a) pacman -Qm | less ;;
     u)
        doas pacman --color=always -Sy archlinux-keyring --needed
        doas pacman --color=always -Su
-	   ## for waybar module
-       # doas checkupdates | wc -l > /tmp/pacup
-       # sleep 1
-       # pkill -SIGRTMIN+8 waybar
-       clear
+	   ## for waybar
+ #      doas checkupdates | wc -l > /tmp/pacup
+  #     sleep 1
+   #    pkill -SIGRTMIN+8 waybar
        ;;
-    " ") clear ;;
-    *) clear ;;
+    *) ;;
   esac
 done
