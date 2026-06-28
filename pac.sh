@@ -118,12 +118,43 @@ choose from c/o SPACE=back \e[1;31mCtrl-C=exit\e[0m
 ARG_CHOICE=$(echo "$1" | sed 's/^-//')
 while true; do
   clear
+
+  if [ -f /var/log/pacman.log ]; then
+    LAST_UPGRADE_TIME=$(grep "synchronizing package lists" /var/log/pacman.log | tail -n 1 | cut -d'[' -f2 | cut -d']' -f1)
+
+    if [ -n "$LAST_UPGRADE_TIME" ]; then
+      last_mod=$(date -d "$LAST_UPGRADE_TIME" +%s 2>/dev/null)
+      now=$(date +%s)
+      diff=$((now - last_mod))
+
+      days=$((diff / 86400))
+      diff=$((diff % 86400))
+      hrs=$((diff / 3600))
+      diff=$((diff % 3600))
+      min=$((diff / 60))
+      sec=$((diff % 60))
+
+      AGE_STR=$(printf "%dd %02dh %02dm %02ds ago" $days $hrs $min $sec)
+    else
+      last_mod=$(date -r /var/log/pacman.log +%s)
+      now=$(date +%s)
+      diff=$((now - last_mod))
+      days=$((diff / 86400))
+      hrs=$(( (diff % 86400) / 3600 ))
+      min=$(( (diff % 3600) / 60 ))
+      AGE_STR=$(printf "~ %dd %02dh %02dm ago (last log touch)" $days $hrs $min)
+    fi
+  else
+    AGE_STR="Log not found"
+  fi
+
   if [ -n "$ARG_CHOICE" ]; then
     PACK="$ARG_CHOICE"
     ARG_CHOICE=""
   else
     echo -e "
-choose from s/q/l/L/r/h/a/o/u/y/c SPACE=refresh \e[1;31mCtrl-C=exit\e[0m
+Last Database Sync(-Sy): $AGE_STR
+\e[1;33mchoose from s/q/l/L/r/h/a/A/o/u/y/f/c\e[0m SPACE=refresh \e[1;31mCtrl-C=exit\e[0m
 
     \e[1;32ms) 📥 or 🔍 package/s\e[0m
     q) 🔍 installed package/s INFO
@@ -175,7 +206,9 @@ choose from s/q/l/L/r/h/a/o/u/y/c SPACE=refresh \e[1;31mCtrl-C=exit\e[0m
        ;;
     a) pacman -Qm | less ;;
     A)
-       pacman -Qmq | PAC_MANAGE "Installed AUR Packages" "Remove" "🔜" "36" "pacman -Qi {1}" doas pacman -Rns ;;
+       pacman -Qmq |\
+       PAC_MANAGE "Installed AUR Packages" "Remove" "🔜" "36" "pacman -Qi {1}" doas pacman -Rns
+       ;;
     u)
        doas pacman --color=always -Sy archlinux-keyring --needed
        doas pacman --color=always -Su
@@ -186,9 +219,10 @@ choose from s/q/l/L/r/h/a/o/u/y/c SPACE=refresh \e[1;31mCtrl-C=exit\e[0m
        ;;
     y)
        doas pacman --color=always -Sy
-       doas checkupdates | wc -l > /tmp/pacup
-       sleep 1
-       pkill -SIGRTMIN+8 waybar
+       ## Below is for updating waybar module
+       # doas checkupdates | wc -l > /tmp/pacup
+       # sleep 1
+       # pkill -SIGRTMIN+8 waybar
        ;;
     f) doas pacman -Fy ;;
     c) CLEAN ;;
