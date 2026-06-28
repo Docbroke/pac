@@ -66,6 +66,55 @@ PAC_MANAGE() {
   fi
 }
 
+CLEAN() {
+  clear
+  echo -e "
+choose from c/o SPACE=back \e[1;31mCtrl-C=exit\e[0m
+
+    c) 🧹 cache
+    o) 🔥 orphans
+    "
+  read -r -n 1 ops
+  echo
+
+  case $ops in
+    o)
+      if [ -n "$(pacman -Qdt)" ]; then
+        printf "\n\e[1;31mThe following orphan packages will be removed:\e[0m\n"
+        pacman -Qdt
+        printf "\nProceed with removing orphans? [y/N] "
+        read -r confirm
+        case "$confirm" in
+          [yY][eE][sS]|[yY]) doas pacman -Rns $(pacman -Qdtq) ;;
+          *) echo "Aborted." ;;
+        esac
+      else
+        echo "No orphans to remove."
+      fi
+      printf "\n\e[1;32mPress any key to return...\e[0m"
+      read -r -n 1 < /dev/tty
+      ;;
+    c)
+      printf "\n\e[1;33mAre you sure you want to clean your package cache?\e[0m [y/N] "
+      read -r confirm
+      case "$confirm" in
+        [yY][eE][sS]|[yY])
+          echo -e "\nRemoving all uninstalled packages from cache..."
+          doas paccache -ruk0
+          echo "Removing older cached versions of all packages except latest 2..."
+          doas paccache -rk2
+          ;;
+        *)
+          echo "Aborted."
+          ;;
+      esac
+      printf "\n\e[1;32mPress any key to return...\e[0m"
+      read -r -n 1 < /dev/tty
+      ;;
+    *) ;;
+  esac
+}
+
 ARG_CHOICE=$(echo "$1" | sed 's/^-//')
 while true; do
   clear
@@ -74,35 +123,75 @@ while true; do
     ARG_CHOICE=""
   else
     echo -e "
-choose from s/q/l/r/h/a/o/u/ SPACE=refresh Ctrl-C=exit
-    s) 📥 or 🔍 package/s
-    q) 🔍 installed package/s
+choose from s/q/l/L/r/h/a/o/u/y/c SPACE=refresh \e[1;31mCtrl-C=exit\e[0m
+
+    \e[1;32ms) 📥 or 🔍 package/s\e[0m
+    q) 🔍 installed package/s INFO
     l) 🧾 FILES in installed package
-    r) 🔥 package/s
+    L) 🧾 FILES in all packages (Uses -F database)
+    \e[1;31mr) 🔥 package/s\e[0m
     h) 📚 History
     a) 🧾 of FOREIGN/AUR packages
+    A) 🔍 or 🔥 FOREIGN/AUR packages
     o) 🔍 find OWNER of a file
-    u) 🔁"
+    \e[1;32mu) 🔁 Update & Upgrade\e[0m
+    y) 🔁 Update Only
+    f) 🔁 Update Database (-F)
+    c) 🧹cleanup🧹
+    "
     read -r -n 1 PACK
   fi
 
   case $PACK in
-    s) printf "\e[1;33mTip: Remember to run a system upgrade ('u') if your databases are out of date!\e[0m\n"
-       pacman -Ssq | PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Si {1}" doas pacman -S ;;
+    s)
+	   printf '\n'
+	   printf "\e[1;33mTip: Run a system upgrade ('u: 🔁') to avoid partial upgrade!\e[0m\n";
+	   read -r -n 1;
+       pacman -Ssq |\
+       PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Si {1}" doas pacman -S
+       ;;
     q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi ;;
     l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Ql {1}" pacman -Qlkk ;;
     r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" doas pacman -Rns ;;
-    o) pacman -Qlq | grep -v '/$' | PAC_MANAGE "Find File Owner" "OWNER" "🔍" "35" "pacman -Qo /{} 2>&1" pacman -Qo /{} ;;
-    h) grep -E 'reloaded|installed|removed|upgraded' /var/log/pacman.log | sort -r | sed -e 's/removed/\x1b[31mremoved\x1b[0m/g' -e 's/installed/\x1b[32minstalled\x1b[0m/g' -e 's/upgraded/\x1b[33mupgraded\x1b[0m/g' | less -R ;;
+    o)
+       pacman -Qlq |\
+       grep -v '/$' |\
+       PAC_MANAGE "Find File Owner" "OWNER" "🔍" "35" "pacman -Qo /{} 2>&1" pacman -Qo /{}
+       ;;
+    L)
+	   printf '\n'
+       printf "\e[1;33mTip: Run a database update('f: 🔁') if out-of-date!\e[0m\n";
+       read -r -n 1;
+       pacman -Ssq |\
+       PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Fl {1}" doas pacman -Fl
+       ;;
+    h)
+       grep -E 'reloaded|installed|removed|upgraded' /var/log/pacman.log |\
+       sort -r |\
+       sed -e 's/removed/\x1b[31mremoved\x1b[0m/g;
+       	s/installed/\x1b[32minstalled\x1b[0m/g;
+       	s/upgraded/\x1b[33mupgraded\x1b[0m/g' |\
+       less -R
+       ;;
     a) pacman -Qm | less ;;
+    A)
+       pacman -Qmq | PAC_MANAGE "Installed AUR Packages" "Remove" "🔜" "36" "pacman -Qi {1}" doas pacman -Rns ;;
     u)
        doas pacman --color=always -Sy archlinux-keyring --needed
        doas pacman --color=always -Su
-	   ## for waybar
- #      doas checkupdates | wc -l > /tmp/pacup
-  #     sleep 1
-   #    pkill -SIGRTMIN+8 waybar
+       ## Below is for updating waybar module
+       # doas checkupdates | wc -l > /tmp/pacup
+       # sleep 1
+       # pkill -SIGRTMIN+8 waybar
        ;;
+    y)
+       doas --color=always pacman -Sy
+       doas checkupdates | wc -l > /tmp/pacup
+       sleep 1
+       pkill -SIGRTMIN+8 waybar
+       ;;
+    f) doas pacman -Fy ;;
+    c) CLEAN ;;
     *) ;;
   esac
 done
