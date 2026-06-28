@@ -61,10 +61,11 @@ while true; do
     ARG_CHOICE="" # Clear it so the loop prompts normally next time
   else
     echo -e "
-choose from s/q/l/r/h/a/u/ SPACE=refresh Ctrl-C=exit
+choose from s/q/l/o/r/h/a/u/ SPACE=refresh Ctrl-C=exit
     s) 📥 or 🔍 package/s
     q) 🔍 installed package/s
     l) 🧾 FILES in installed package
+    o) 🔍 find OWNER of a file
     r) 🔥 package/s
     h) 📚 History
     a) 🧾 of FOREIGN/AUR packages
@@ -79,6 +80,18 @@ choose from s/q/l/r/h/a/u/ SPACE=refresh Ctrl-C=exit
     r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" doas pacman -Rns; clear ;;
     h) grep -E 'reloaded|installed|removed|upgraded' /var/log/pacman.log | sort -r | sed -e 's/removed/\x1b[31mremoved\x1b[0m/g' -e 's/installed/\x1b[32minstalled\x1b[0m/g' -e 's/upgraded/\x1b[33mupgraded\x1b[0m/g' | less -R; clear ;;
     a) pacman -Qm | less; clear ;;
+	o)
+       pacman -Qlq | grep -v '/$' | \
+       fzf --prompt="Find Owner > " \
+           --preview="pacman -Qo /{} 2>&1" \
+           --border-label=" Find File Owner " \
+           --preview-window="right:60%:border-rounded" | \
+       xargs -I {} -ro pacman -Qo /{}
+
+       printf "\n\e[1;30mPress any key to return to menu...\e[0m"
+       read -r -n 1
+       clear
+       ;;
     u)
        doas pacman --color=always -Sy archlinux-keyring --needed
        doas pacman --color=always -Su
