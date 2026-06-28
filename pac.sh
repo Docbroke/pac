@@ -146,7 +146,7 @@ choose from s/q/l/L/r/h/a/o/u/y/c SPACE=refresh \e[1;31mCtrl-C=exit\e[0m
     s)
 	   printf '\n'
 	   printf "\e[1;33mTip: Run a system upgrade ('u: 🔁') to avoid partial upgrade!\e[0m\n";
-	   read -r -n 1;
+	   read -r -n 1 < /dev/tty;
        pacman -Ssq |\
        PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Si {1}" doas pacman -S
        ;;
@@ -161,7 +161,7 @@ choose from s/q/l/L/r/h/a/o/u/y/c SPACE=refresh \e[1;31mCtrl-C=exit\e[0m
     L)
 	   printf '\n'
        printf "\e[1;33mTip: Run a database update('f: 🔁') if out-of-date!\e[0m\n";
-       read -r -n 1;
+       read -r -n 1 < /dev/tty;
        pacman -Ssq |\
        PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Fl {1}" doas pacman -Fl
        ;;
@@ -185,7 +185,7 @@ choose from s/q/l/L/r/h/a/o/u/y/c SPACE=refresh \e[1;31mCtrl-C=exit\e[0m
        # pkill -SIGRTMIN+8 waybar
        ;;
     y)
-       doas --color=always pacman -Sy
+       doas pacman --color=always -Sy
        doas checkupdates | wc -l > /tmp/pacup
        sleep 1
        pkill -SIGRTMIN+8 waybar
