@@ -1,0 +1,9 @@
+[Unit]
+Description=Service to check pacman updates for waybar
+
+[Service]
+Type=oneshot
+ExecStart=%h/bin/paccheck
+
+[Install]
+WantedBy=default.target
