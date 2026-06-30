@@ -1,0 +1,9 @@
+			"custom/pacman": {
+                "format": "📦{text}",
+                "exec": "cat /tmp/pacup || echo '❓'",
+            	  "tooltip-format": "Left: pac, Right: update",
+                "exec-if": "exit 0",
+                "on-click-right": "paccheck",
+                "on-click": "foot -m pac",
+                "signal": 8
+           },
