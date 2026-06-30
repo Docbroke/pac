@@ -1,0 +1,9 @@
+#!/bin/bash
+
+## runs from systemd paccheck.timer or cronjob
+# doas pacman -Sy
+checkupdates | wc -l > /tmp/pacup
+
+## sleep is required when run from waybar
+sleep 1 && \
+pkill -SIGRTMIN+8 waybar
