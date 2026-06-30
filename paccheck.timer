@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer running paccheck for waybar
+Wants=network-online.target
+After=network-online.target
+
+[Timer]
+OnCalendar= *-*-* *:00:00
+
+[Install]
+WantedBy=default.target
