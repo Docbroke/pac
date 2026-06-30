@@ -116,6 +116,7 @@ choose from c/o SPACE=back \e[1;31mCtrl-C=exit\e[0m
 }
 
 ARG_CHOICE=$(echo "$1" | sed 's/^-//')
+## $(checkupdates -n) below is only useful if running checkupdates periodically in cronjob or similar
 while true; do
   clear
 
@@ -154,30 +155,39 @@ while true; do
   else
     echo -e "
 Last Database Sync(-Sy): $AGE_STR
-\e[1;33mchoose from s/q/l/L/r/h/a/A/o/u/y/f/c\e[0m SPACE=refresh \e[1;31mCtrl-C=exit\e[0m
+$(checkupdates -n || echo "no updates available, use 'w: 👀' to refresh")
+\e[1;33mchoose from s/q/l/L/r/h/a/A/o/u/y/w/U/f/c\e[0m SPACE=refresh \e[1;31mCtrl-C=🏁\e[0m
 
-    \e[1;33ms)\e[0m \e[1;32m📥 or 🔍 package/s\e[0m
-    \e[1;33mq)\e[0m 🔍 installed package/s INFO
-    \e[1;33ml)\e[0m 🧾 FILES in installed package
-    \e[1;33mL)\e[0m 🧾 FILES in all packages (Uses -F database)
-    \e[1;33mr)\e[0m \e[1;31m🔥 package/s\e[0m
-    \e[1;33mh)\e[0m 📚 History
-    \e[1;33ma)\e[0m 🧾 of FOREIGN/AUR packages
-    \e[1;33mA)\e[0m 🔍 or 🔥 FOREIGN/AUR packages
-    \e[1;33mo)\e[0m 🔍 find OWNER of a file
-    \e[1;33mu)\e[0m \e[1;32m🔁 Update & Upgrade\e[0m
-    \e[1;33my)\e[0m 🔁 Update Only
+    \e[1;33ms)\e[0m \e[1;36m🔍±Install📥 📦\e[0m
+    \e[1;33mq)\e[0m INFO🔍: 📥installed 📦
+    \e[1;33ml)\e[0m 📂📄 in 📥installed 📦
+    \e[1;33mL)\e[0m 📂📄 in all 📦 (Uses -F database)
+    \e[1;33mr)\e[0m \e[1;31mRemove🔥: Package/s (-Rns)\e[0m
+    \e[1;33mh)\e[0m 📚 History (Pacman Log)
+    \e[1;33ma)\e[0m 📋 of FOREIGN/AUR 📦
+    \e[1;33mA)\e[0m 🔍±🔥 FOREIGN/AUR 📦
+    \e[1;33mo)\e[0m 🔍 OWNER🫅 of a 📄
+    \e[1;33mu)\e[0m \e[1;36mUpdate🔁 & Upgrade🔄\e[0m (-Syu)
+    \e[1;33my)\e[0m Update🔁 Only (-Sy, AVOID)
+    \e[1;33mw)\e[0m 👀 checkupdates (prefer cronjob)
+    \e[1;33mU)\e[0m Upgrade🔄 Only
     \e[1;33mf)\e[0m 🔁 Update Database (-F)
-    \e[1;33mc)\e[0m 🧹cleanup🧹
+    \e[1;33mc)\e[0m 🧹Cleanup🧹
     "
     read -r -n 1 PACK
   fi
 
+# FIX: If an escape sequence (like an arrow key) is detected, flush the buffer
+  if [ "$PACK" = "$(printf '\x1b')" ]; then
+    read -r -n 2 -t 0.1 dummy  # Read the remaining '[' and 'A' characters instantly
+    PACK=""                   # Clear PACK so it doesn't trigger anything
+  fi
   case $PACK in
     s)
 	   printf '\n'
-	   printf "\e[1;33mTip: Run a system upgrade ('u: 🔁') to avoid partial upgrade!\e[0m\n";
-	   read -r -n 1 < /dev/tty;
+	   printf "\e[1;33mTip: Run('u: 🔁🔄') to avoid partial upgrade!\e[0m\n";
+       printf "\n\e[1;32mPress any key to continue...\e[0m"
+       read -r -n 1 < /dev/tty;
        pacman -Ssq |\
        PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Si {1}" doas pacman -S
        ;;
@@ -212,18 +222,39 @@ Last Database Sync(-Sy): $AGE_STR
     u)
        doas pacman --color=always -Sy archlinux-keyring --needed
        doas pacman --color=always -Su
-       ## Below is for updating waybar module
-       # doas checkupdates | wc -l > /tmp/pacup
-       # sleep 1
-       # pkill -SIGRTMIN+8 waybar
+       ;;
+    U)
+       doas pacman --color=always -Su
        ;;
     y)
-       doas pacman --color=always -Sy
-       ## Below is for updating waybar module
-       # doas checkupdates | wc -l > /tmp/pacup
-       # sleep 1
-       # pkill -SIGRTMIN+8 waybar
+	   printf '\n'
+	   printf "\e[1;33mRun ('u: 🔁🔄') to avoid partial upgrade!\e[0m\n";
+       printf "\n\e[1;33mAre you sure you want to run Update ONLY?\e[0m [y/N] "
+       read -r confirm
+       case "$confirm" in
+        [yY][eE][sS]|[yY])
+       		doas pacman --color=always -Sy
+          ;;
+        *)
+          echo "Aborted."
+          ;;
+       esac
+       printf "\n\e[1;32mPress any key to return...\e[0m"
+       read -r -n 1 < /dev/tty
        ;;
+    w)
+       clear
+       echo "checking for updates"
+	   ## for updating waybar module
+       #checkupdates | wc -l > /tmp/pacup
+       #sleep 1
+       #pkill -SIGRTMIN+8 waybar
+       ## for this script to show updates
+       checkupdates
+       echo "done"
+       printf "\n\e[1;32mPress any key to return to menu...\e[0m"
+       read -r -n 1 < /dev/tty
+	   ;;
     f) doas pacman -Fy ;;
     c) CLEAN ;;
     *) ;;
