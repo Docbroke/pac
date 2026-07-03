@@ -155,23 +155,23 @@ while true; do
   else
     echo -e "
 Last Database Sync(-Sy): $AGE_STR
-$(checkupdates -n || echo "no updates available, use 'w: 👀' to refresh")
+$(checkupdates -n || echo "no updates available, use 'y: 👀' to check updates")
 \e[1;33mchoose from s/q/l/L/r/h/a/A/o/u/y/w/U/f/c\e[0m SPACE=refresh \e[1;31mCtrl-C=🏁\e[0m
 
-    \e[1;33ms)\e[0m \e[1;36m🔍±Install📥 📦\e[0m
+    \e[1;33ms)\e[0m \e[1;36m🔍 ±Install📥 📦\e[0m
     \e[1;33mq)\e[0m INFO🔍: 📥installed 📦
     \e[1;33ml)\e[0m 📂📄 in 📥installed 📦
-    \e[1;33mL)\e[0m 📂📄 in all 📦 (Uses -F database)
+    \e[1;33mL)\e[0m 📂📄 in all 📦 (Uses Local -F database)
     \e[1;33mr)\e[0m \e[1;31mRemove🔥: Package/s (-Rns)\e[0m
     \e[1;33mh)\e[0m 📚 History (Pacman Log)
     \e[1;33ma)\e[0m 📋 of FOREIGN/AUR 📦
     \e[1;33mA)\e[0m 🔍±🔥 FOREIGN/AUR 📦
     \e[1;33mo)\e[0m 🔍 OWNER🫅 of a 📄
     \e[1;33mu)\e[0m \e[1;36mUpdate🔁 & Upgrade🔄\e[0m (-Syu)
-    \e[1;33my)\e[0m Update🔁 Only (-Sy, AVOID)
-    \e[1;33mw)\e[0m 👀 checkupdates (prefer cronjob)
+    \e[1;33my)\e[0m 👀 checkupdates
+    \e[1;33mY)\e[0m Update🔁 Only (-Sy, \e[1;37mAVOID\e[0m)
     \e[1;33mU)\e[0m Upgrade🔄 Only
-    \e[1;33mf)\e[0m 🔁 Update Database (-F)
+    \e[1;33mf)\e[0m Update🔁 Local Database (-F)
     \e[1;33mc)\e[0m 🧹Cleanup🧹
     "
     read -r -n 1 PACK
@@ -202,6 +202,7 @@ $(checkupdates -n || echo "no updates available, use 'w: 👀' to refresh")
     L)
 	   printf '\n'
        printf "\e[1;33mTip: Run a database update('f: 🔁') if out-of-date!\e[0m\n";
+       printf "\n\e[1;32mPress any key to continue...\e[0m"
        read -r -n 1 < /dev/tty;
        pacman -Ssq |\
        PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Fl {1}" doas pacman -Fl
@@ -226,7 +227,7 @@ $(checkupdates -n || echo "no updates available, use 'w: 👀' to refresh")
     U)
        doas pacman --color=always -Su
        ;;
-    y)
+    Y)
 	   printf '\n'
 	   printf "\e[1;33mRun ('u: 🔁🔄') to avoid partial upgrade!\e[0m\n";
        printf "\n\e[1;33mAre you sure you want to run Update ONLY?\e[0m [y/N] "
@@ -242,15 +243,15 @@ $(checkupdates -n || echo "no updates available, use 'w: 👀' to refresh")
        printf "\n\e[1;32mPress any key to return...\e[0m"
        read -r -n 1 < /dev/tty
        ;;
-    w)
+    y)
        clear
-       echo "checking for updates"
-	   ## for updating waybar module
-       #checkupdates | wc -l > /tmp/pacup
-       #sleep 1
-       #pkill -SIGRTMIN+8 waybar
+       printf "Running \e[1;33mcheckupdates\e[0m..."
+       ## for updating waybar module
+       checkupdates | wc -l > /tmp/pacup
+       sleep 1
+       pkill -SIGRTMIN+8 waybar
        ## for this script to show updates
-       checkupdates
+       checkupdates -n
        echo "done"
        printf "\n\e[1;32mPress any key to return to menu...\e[0m"
        read -r -n 1 < /dev/tty
