@@ -155,8 +155,8 @@ while true; do
   else
     echo -e "
 Last Database Sync(-Sy): $AGE_STR
-$(checkupdates -n || echo "no updates available, use 'y: 👀' to check updates")
-\e[1;33mchoose from s/q/l/L/r/h/a/A/o/u/y/w/U/f/c\e[0m SPACE=refresh \e[1;31mCtrl-C=🏁\e[0m
+$(checkupdates -n || echo "no updates available, use 'y: 👀' to check updates" )
+\e[1;33mchoose from s/q/l/L/r/h/a/A/o/u/y/w/U/f/c\e[0m SPACE=refresh \e[1;31mCtrl-C/Escape=🏁\e[0m
 
     \e[1;33ms)\e[0m \e[1;36m🔍 ±Install📥 📦\e[0m
     \e[1;33mq)\e[0m INFO🔍: 📥installed 📦
@@ -174,14 +174,24 @@ $(checkupdates -n || echo "no updates available, use 'y: 👀' to check updates"
     \e[1;33mf)\e[0m Update🔁 Local Database (-F)
     \e[1;33mc)\e[0m 🧹Cleanup🧹
     "
-    read -r -n 1 PACK
+read -r -n 1 PACK
   fi
 
-# FIX: If an escape sequence (like an arrow key) is detected, flush the buffer
+# Handle Escape sequences (Arrow keys vs pure Escape key)
   if [ "$PACK" = "$(printf '\x1b')" ]; then
-    read -r -n 2 -t 0.1 dummy  # Read the remaining '[' and 'A' characters instantly
-    PACK=""                   # Clear PACK so it doesn't trigger anything
+    # Check if more characters arrive instantly (timeout 0.01s)
+    read -r -n 2 -t 0.01 dummy
+    if [ -z "$dummy" ]; then
+      # No extra characters means the user pressed ONLY the Escape key
+      clear
+      echo "Exiting..."
+      exit 0
+    else
+      # Extra characters detected means it was an arrow key; ignore it
+      PACK=""
+    fi
   fi
+
   case $PACK in
     s)
 	   printf '\n'
@@ -223,9 +233,17 @@ $(checkupdates -n || echo "no updates available, use 'y: 👀' to check updates"
     u)
        doas pacman --color=always -Sy archlinux-keyring --needed
        doas pacman --color=always -Su
+       ## for updating waybar module
+       checkupdates -n | wc -l > /tmp/pacup
+       sleep 1
+       pkill -SIGRTMIN+8 waybar
        ;;
     U)
        doas pacman --color=always -Su
+       ## for updating waybar module
+       checkupdates -n | wc -l > /tmp/pacup
+       sleep 1
+       pkill -SIGRTMIN+8 waybar
        ;;
     Y)
 	   printf '\n'
@@ -250,7 +268,7 @@ $(checkupdates -n || echo "no updates available, use 'y: 👀' to check updates"
        checkupdates | wc -l > /tmp/pacup
        sleep 1
        pkill -SIGRTMIN+8 waybar
-       ## for this script to show updates
+       ## to print updates here
        checkupdates -n
        echo "done"
        printf "\n\e[1;32mPress any key to return to menu...\e[0m"
