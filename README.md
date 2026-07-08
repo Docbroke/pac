@@ -4,6 +4,12 @@
 
 pac.sh is a TUI wrapper for arch linux package manager pacman, using FZF.
 
+Depends ON:
+- pacman
+- fzf
+- pacman-contrib (for some features)
+- doas or sudo (selected by editing pac.sh)
+
 # waybar module (entirely optional)
 paccheck is a small script which runs checkupdates and stores number of updated packages
 
