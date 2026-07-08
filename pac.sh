@@ -195,11 +195,14 @@ read -r -n 1 PACK
   case $PACK in
     s)
 	   printf '\n'
-	   printf "\e[1;33mTip: Run('u: 🔁🔄') to avoid partial upgrade!\e[0m\n";
-       printf "\n\e[1;32mPress any key to continue...\e[0m"
-       read -r -n 1 < /dev/tty;
-       pacman -Ssq |\
-       PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Si {1}" doas pacman -S
+	   printf "\e[1;33mDo you want to run full upgrade while installing selected packages?[y/n]\e[0m\n";
+       read -r confirm
+       case "$confirm" in
+        [yY][eE][sS]|[yY]) key=Syu ;;
+        *) key=S ;;
+       esac
+   	   pacman -Ssq |\
+       PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Si {1}" doas pacman -$key
        ;;
     q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi ;;
     l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Ql {1}" pacman -Qlkk ;;
@@ -251,12 +254,8 @@ read -r -n 1 PACK
        printf "\n\e[1;33mAre you sure you want to run Update ONLY?\e[0m [y/N] "
        read -r confirm
        case "$confirm" in
-        [yY][eE][sS]|[yY])
-       		doas pacman --color=always -Sy
-          ;;
-        *)
-          echo "Aborted."
-          ;;
+        [yY][eE][sS]|[yY]) doas pacman --color=always -Sy ;;
+        *) echo "Aborted." ;;
        esac
        printf "\n\e[1;32mPress any key to return...\e[0m"
        read -r -n 1 < /dev/tty
