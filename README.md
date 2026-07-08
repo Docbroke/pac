@@ -1,3 +1,5 @@
+<img width="2006" height="1260" alt="image1" src="https://github.com/user-attachments/assets/3a4ff78e-531d-4900-8c61-6629bcd89cce" />
+
 pac.sh is a TUI wrapper for arch linux package manager pacman, using FZF.
 
 # waybar module (entirely optional)
