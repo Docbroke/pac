@@ -1,4 +1,8 @@
-#!/bin/sh
+#!/bin/bash
+
+## choose privilege_escalation command
+priv=doas
+# priv=sudo
 
 export FZF_DEFAULT_OPTS="
   --multi
@@ -85,7 +89,7 @@ choose from c/o SPACE=back \e[1;31mCtrl-C=exit\e[0m
         printf "\nProceed with removing orphans? [y/N] "
         read -r confirm
         case "$confirm" in
-          [yY][eE][sS]|[yY]) doas pacman -Rns $(pacman -Qdtq) ;;
+          [yY][eE][sS]|[yY]) $priv pacman -Rns $(pacman -Qdtq) ;;
           *) echo "Aborted." ;;
         esac
       else
@@ -100,9 +104,9 @@ choose from c/o SPACE=back \e[1;31mCtrl-C=exit\e[0m
       case "$confirm" in
         [yY][eE][sS]|[yY])
           echo -e "\nRemoving all uninstalled packages from cache..."
-          doas paccache -ruk0
+          $priv paccache -ruk0
           echo "Removing older cached versions of all packages except latest 2..."
-          doas paccache -rk2
+          $priv paccache -rk2
           ;;
         *)
           echo "Aborted."
@@ -202,11 +206,11 @@ read -r -n 1 PACK
         *) key=S ;;
        esac
    	   pacman -Ssq |\
-       PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Si {1}" doas pacman -$key
+       PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Si {1}" $priv pacman -$key
        ;;
     q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi ;;
     l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Ql {1}" pacman -Qlkk ;;
-    r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" doas pacman -Rns ;;
+    r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" $priv pacman -Rns ;;
     o)
        pacman -Qlq |\
        grep -v '/$' |\
@@ -218,7 +222,7 @@ read -r -n 1 PACK
        printf "\n\e[1;32mPress any key to continue...\e[0m"
        read -r -n 1 < /dev/tty;
        pacman -Ssq |\
-       PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Fl {1}" doas pacman -Fl
+       PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Fl {1}" $priv pacman -Fl
        ;;
     h)
        grep -E 'reloaded|installed|removed|upgraded' /var/log/pacman.log |\
@@ -231,18 +235,18 @@ read -r -n 1 PACK
     a) pacman -Qm | less ;;
     A)
        pacman -Qmq |\
-       PAC_MANAGE "Installed AUR Packages" "Remove" "🔜" "36" "pacman -Qi {1}" doas pacman -Rns
+       PAC_MANAGE "Installed AUR Packages" "Remove" "🔜" "36" "pacman -Qi {1}" $priv pacman -Rns
        ;;
     u)
-       doas pacman --color=always -Sy archlinux-keyring --needed
-       doas pacman --color=always -Su
+       $priv pacman --color=always -Sy archlinux-keyring --needed
+       $priv pacman --color=always -Su
        ## for updating waybar module
        checkupdates -n | wc -l > /tmp/pacup
        sleep 1
        pkill -SIGRTMIN+8 waybar
        ;;
     U)
-       doas pacman --color=always -Su
+       $priv pacman --color=always -Su
        ## for updating waybar module
        checkupdates -n | wc -l > /tmp/pacup
        sleep 1
@@ -254,7 +258,7 @@ read -r -n 1 PACK
        printf "\n\e[1;33mAre you sure you want to run Update ONLY?\e[0m [y/N] "
        read -r confirm
        case "$confirm" in
-        [yY][eE][sS]|[yY]) doas pacman --color=always -Sy ;;
+        [yY][eE][sS]|[yY]) $priv pacman --color=always -Sy ;;
         *) echo "Aborted." ;;
        esac
        printf "\n\e[1;32mPress any key to return...\e[0m"
@@ -273,7 +277,7 @@ read -r -n 1 PACK
        printf "\n\e[1;32mPress any key to return to menu...\e[0m"
        read -r -n 1 < /dev/tty
 	   ;;
-    f) doas pacman -Fy ;;
+    f) $priv pacman -Fy ;;
     c) CLEAN ;;
     *) ;;
   esac
