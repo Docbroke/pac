@@ -267,13 +267,16 @@ read -r -n 1 PACK
     y)
        clear
        printf "Running \e[1;33mcheckupdates\e[0m..."
+	   printf '\n'
+	   printf '\n'
        ## for updating waybar module
        checkupdates | wc -l > /tmp/pacup
        sleep 1
        pkill -SIGRTMIN+8 waybar
        ## to print updates here
        checkupdates -n
-       echo "done"
+	   printf '\n'
+       printf "done"
        printf "\n\e[1;32mPress any key to return to menu...\e[0m"
        read -r -n 1 < /dev/tty
 	   ;;
