@@ -200,7 +200,7 @@ read -r -n 1 PACK
     s)
 	   printf '\n'
 	   printf "\e[1;33mDo you want to run full upgrade while installing selected packages?[y/n]\e[0m\n";
-       read -r confirm
+       read -r -n 1 confirm
        case "$confirm" in
         [yY][eE][sS]|[yY]) key=Syu ;;
         *) key=S ;;
