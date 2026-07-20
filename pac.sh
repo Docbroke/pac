@@ -160,7 +160,7 @@ while true; do
     echo -e "
 Last Database Sync(-Sy): $AGE_STR
 $(checkupdates -n || echo "no updates available, use 'y: 👀' to check updates" )
-\e[1;33mchoose from s/q/l/L/r/h/a/A/o/u/y/w/U/f/c\e[0m SPACE=refresh \e[1;31mCtrl-C/Escape=🏁\e[0m
+\e[1;33mchoose from s/q/l/L/r/h/a/A/o/u/y/w/f/c\e[0m SPACE=refresh \e[1;31mCtrl-C/Escape=🏁\e[0m
 
     \e[1;33ms)\e[0m \e[1;36m🔍 ±Install📥 📦\e[0m
     \e[1;33mq)\e[0m INFO🔍: 📥installed 📦
@@ -173,11 +173,12 @@ $(checkupdates -n || echo "no updates available, use 'y: 👀' to check updates"
     \e[1;33mo)\e[0m 🔍 OWNER🫅 of a 📄
     \e[1;33mu)\e[0m \e[1;36mUpdate🔁 & Upgrade🔄\e[0m (-Syu)
     \e[1;33my)\e[0m 👀 checkupdates
-    \e[1;33mY)\e[0m Update🔁 Only (-Sy, \e[1;37mAVOID\e[0m)
-    \e[1;33mU)\e[0m Upgrade🔄 Only
     \e[1;33mf)\e[0m Update🔁 Local Database (-F)
     \e[1;33mc)\e[0m 🧹Cleanup🧹
     "
+# \e[1;33mchoose from s/q/l/L/r/h/a/A/o/u/y/w/U/f/c\e[0m SPACE=refresh \e[1;31mCtrl-C/Escape=🏁\e[0m
+    # \e[1;33mY)\e[0m Update🔁 Only (-Sy, \e[1;37mAVOID\e[0m)
+    # \e[1;33mU)\e[0m Upgrade🔄 Only
 read -r -n 1 PACK
   fi
 
@@ -202,14 +203,17 @@ read -r -n 1 PACK
 	   printf "\e[1;33mDo you want to run full upgrade while installing selected packages?[y/n]\e[0m\n";
        read -r -n 1 confirm
        case "$confirm" in
-        [yY][eE][sS]|[yY]) key=Syu ;;
+        [yY]) key=Syu ;;
         *) key=S ;;
        esac
    	   pacman -Ssq |\
-       PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Si {1}" $priv pacman -$key
+   	   ## requires 'pacman -Fy'
+       PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" 'cat <(pacman -Si {1}) <(pacman -Fl {1} | awk "{print \$2}")' $priv pacman -$key
+       # PAC_MANAGE "Pacman Package Installer" "INSTALL" "🔜" "36" "pacman -Si {1}" $priv pacman -$key
        ;;
-    q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi ;;
-    l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Ql {1}" pacman -Qlkk ;;
+    # q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" "pacman -Qi {1}" pacman -Qi ;;
+    q) PAC_MANAGE "Get Package INFO" "VIEW" "🔍" "32" 'cat <(pacman -Qi {1}) <(pacman -Qlkk {1} | awk "{print \$2}")' pacman -Qi ;;
+    l) PAC_MANAGE "List Package Files" "LIST" "🧾" "32" "pacman -Qlkk {1}" pacman -Qlkk ;;
     r) PAC_MANAGE "Pacman Remove Packages" "Remove" "❌" "31" "pacman -Qi {1}" $priv pacman -Rns ;;
     o)
        pacman -Qlq |\
@@ -238,32 +242,36 @@ read -r -n 1 PACK
        PAC_MANAGE "Installed AUR Packages" "Remove" "🔜" "36" "pacman -Qi {1}" $priv pacman -Rns
        ;;
     u)
-       $priv pacman --color=always -Sy archlinux-keyring --needed
-       $priv pacman --color=always -Su
-       ## for updating waybar module
-       checkupdates -n | wc -l > /tmp/pacup
-       sleep 1
-       pkill -SIGRTMIN+8 waybar
-       ;;
-    U)
-       $priv pacman --color=always -Su
-       ## for updating waybar module
-       checkupdates -n | wc -l > /tmp/pacup
-       sleep 1
-       pkill -SIGRTMIN+8 waybar
-       ;;
-    Y)
+       printf "\n\e[1;32mupdating keyring first...\e[0m"
 	   printf '\n'
-	   printf "\e[1;33mRun ('u: 🔁🔄') to avoid partial upgrade!\e[0m\n";
-       printf "\n\e[1;33mAre you sure you want to run Update ONLY?\e[0m [y/N] "
-       read -r confirm
-       case "$confirm" in
-        [yY][eE][sS]|[yY]) $priv pacman --color=always -Sy ;;
-        *) echo "Aborted." ;;
-       esac
-       printf "\n\e[1;32mPress any key to return...\e[0m"
-       read -r -n 1 < /dev/tty
+       $priv pacman --color=always -Sy archlinux-keyring --needed && \
+       printf "\n\e[1;32mupgrading...\e[0m"
+	   printf '\n'
+       $priv pacman --color=always -Su
+       ## for updating waybar module
+       checkupdates -n | wc -l > /tmp/pacup
+       sleep 1
+       pkill -SIGRTMIN+8 waybar
        ;;
+    # U)
+       # $priv pacman --color=always -Su
+       ### for updating waybar module
+       # checkupdates -n | wc -l > /tmp/pacup
+       # sleep 1
+       # pkill -SIGRTMIN+8 waybar
+       # ;;
+    # Y)
+	   # printf '\n'
+	   # printf "\e[1;33mRun ('u: 🔁🔄') to avoid partial upgrade!\e[0m\n";
+       # printf "\n\e[1;33mAre you sure you want to run Update ONLY?\e[0m [y/N] "
+       # read -r confirm
+       # case "$confirm" in
+        # [yY][eE][sS]|[yY]) $priv pacman --color=always -Sy ;;
+        # *) echo "Aborted." ;;
+       # esac
+       # printf "\n\e[1;32mPress any key to return...\e[0m"
+       # read -r -n 1 < /dev/tty
+       # ;;
     y)
        clear
        printf "Running \e[1;33mcheckupdates\e[0m..."
